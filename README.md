@@ -33,6 +33,17 @@ stack frame │ • │ 8 │ 6 │ <- my_name: String
 
             [––––––– length ––––––––]
 ```
+Rust stores the `String` Object from `my_name` on the stack. The object comes with a pointer to a heap-allocated buffer which holds the actual data, the buffer's capacity and the length of the data that is being stored. Given this, the size of the `String` object itself is **always fixed and three words long.**
+
+One of the things that make a `String` a String`, is the capability of resizing its buffer if needed. For example, we could use its `.push_str()` method to append more text, which potentially causes the underlying buffer to increase in size (notice that `my_name` needs to be mutable to make this work):
+
+```rust
+let mut my_name = "Austin".to_string();
+my_name.push_str(" Chen");
+```
+In fact, if you're familiar with Rust's `Vec<T>` type, you already know what a `String` is because it's essentially the same in behaviour and characteristics, just with the difference that it comes with gurantees of only holding well-formed UTF-8 text.
+
+
 ```
             my_name: String   last_name: &str
             [––––––––––––]    [–––––––]
