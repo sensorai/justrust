@@ -15,3 +15,36 @@ Rust has two main types of strings: `String` and `&str`. What is the difference?
 * `String` is a more complicated string. It is a bit slower, but it has more functions. A `String` is a pointer, with data on the heap.
 
 Also note that `&str` has the `&` in front of it because you need a reference to use a `str`. That's because of the reason we saw above: the stack needs to know the size. So we give it a `&` that it knows the size of, and then it is happy. Also, because you use a `&` to interact with a `str`, you don't own it. But a `String` is an owned type. We will soon learn why that is important to know.
+
+```
+                     buffer
+                   /   capacity
+                 /   /  length
+               /   /   /
+            +–––+–––+–––+
+stack frame │ • │ 8 │ 6 │ <- my_name: String
+            +–│–+–––+–––+
+              │
+            [–│–––––––– capacity –––––––––––]
+              │
+            +–V–+–––+–––+–––+–––+–––+–––+–––+
+       heap │ P │ a │ s │ c │ a │ l │   │   │
+            +–––+–––+–––+–––+–––+–––+–––+–––+
+
+            [––––––– length ––––––––]
+```
+```
+            my_name: String   last_name: &str
+            [––––––––––––]    [–––––––]
+            +–––+––––+––––+–––+–––+–––+
+stack frame │ • │ 16 │ 13 │   │ • │ 6 │
+            +–│–+––––+––––+–––+–│–+–––+
+              │                 │
+              │                 +–––––––––+
+              │                           │
+              │                           │
+              │                         [–│––––––– str –––––––––]
+            +–V–+–––+–––+–––+–––+–––+–––+–V–+–––+–––+–––+–––+–––+–––+–––+–––+
+       heap │ P │ a │ s │ c │ a │ l │   │ P │ r │ e │ c │ h │ t │   │   │   │
+            +–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+
+```
