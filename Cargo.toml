@@ -1,8 +1,14 @@
-[package]
-name = "justrust"
-version = "0.1.0"
-edition = "2021"
+[workspace]
+members = [
+#  "src/03-setup",
+#  "src/05-led-roulette",
+#  "src/07-uart",
+#  "src/08-i2c",
+#  "src/09-led-compass",
+  "src/10-punch-o-meter",
+]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
+[profile.release]
+codegen-units = 1
+debug = true
+lto = true

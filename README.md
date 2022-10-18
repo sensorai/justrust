@@ -1,61 +1,59 @@
-# Just Rust
+# LED roulette
 
-Rust is a language that is quite new, but already very popular. It's popular because it gives you the speed and control of C or C++ but also the memory safety of other newer languages like Python. It does this with some new ideas that are sometimes different from other languages. That means that there are some new things to learn, and  you can't just "figure it out as you go along". Rust is a language that you have to think about for a while to understand. But it still looks pretty familiar if you know another language and it is made to help you write good code.
+Alright, let's start by building the following application:
 
-# Who am I?
+<p align="center">
+<video src="../assets/roulette_fast.mp4" loop autoplay>
+</p>
 
-I wrote Just Rust while thinking of how to make it easy for companies here to start using it.
+I'm going to give you a high level API to implement this app but don't worry we'll do low level
+stuff later on. The main goal of this chapter is to get familiar with the *flashing* and debugging
+process.
 
+The starter code is in the `src` directory of the book repository. Inside that directory there are more
+directories named after each chapter of this book. Most of those directories are starter Cargo
+projects.
 
-## String
+Now, jump into the `src/05-led-roulette` directory. Check the `src/main.rs` file:
 
-Rust has two main types of strings: `String` and `&str`. What is the difference?
-
-* `&str` is a simple string. When you write `let my_variable = "Hello, world!"`, you create a `&str`. A `&str` is very fast.
-* `String` is a more complicated string. It is a bit slower, but it has more functions. A `String` is a pointer, with data on the heap.
-
-Also note that `&str` has the `&` in front of it because you need a reference to use a `str`. That's because of the reason we saw above: the stack needs to know the size. So we give it a `&` that it knows the size of, and then it is happy. Also, because you use a `&` to interact with a `str`, you don't own it. But a `String` is an owned type. We will soon learn why that is important to know.
-
+``` rust
+{{#include src/main.rs}}
 ```
-                     buffer
-                   /   capacity
-                 /   /  length
-               /   /   /
-            +–––+–––+–––+
-stack frame │ • │ 8 │ 6 │ <- my_name: String
-            +–│–+–––+–––+
-              │
-            [–│–––––––– capacity –––––––––––]
-              │
-            +–V–+–––+–––+–––+–––+–––+–––+–––+
-       heap │ P │ a │ s │ c │ a │ l │   │   │
-            +–––+–––+–––+–––+–––+–––+–––+–––+
 
-            [––––––– length ––––––––]
+Microcontroller programs are different from standard programs in two aspects: `#![no_std]` and
+`#![no_main]`.
+
+The `no_std` attribute says that this program won't use the `std` crate, which assumes an underlying
+OS; the program will instead use the `core` crate, a subset of `std` that can run on bare metal
+systems (i.e., systems without OS abstractions like files and sockets).
+
+The `no_main` attribute says that this program won't use the standard `main` interface, which is
+tailored for command line applications that receive arguments. Instead of the standard `main` we'll
+use the `entry` attribute from the [`cortex-m-rt`] crate to define a custom entry point. In this
+program we have named the entry point "main", but any other name could have been used. The entry
+point function must have signature `fn() -> !`; this type indicates that the function can't return
+-- this means that the program never terminates.
+
+[`cortex-m-rt`]: https://crates.io/crates/cortex-m-rt
+
+If you are a careful observer, you'll also notice there is a `.cargo` directory in the Cargo project
+as well. This directory contains a Cargo configuration file (`.cargo/config`) that tweaks the
+linking process to tailor the memory layout of the program to the requirements of the target device.
+This modified linking process is a requirement of the `cortex-m-rt` crate.
+
+Furthermore, there is also an `Embed.toml` file
+
+```toml
+{{#include Embed.toml}}
 ```
-Rust stores the `String` Object from `my_name` on the stack. The object comes with a pointer to a heap-allocated buffer which holds the actual data, the buffer's capacity and the length of the data that is being stored. Given this, the size of the `String` object itself is **always fixed and three words long.**
 
-One of the things that make a `String` a String`, is the capability of resizing its buffer if needed. For example, we could use its `.push_str()` method to append more text, which potentially causes the underlying buffer to increase in size (notice that `my_name` needs to be mutable to make this work):
+This file tells `cargo-embed` that:
 
-```rust
-let mut my_name = "Austin".to_string();
-my_name.push_str(" Chen");
-```
-In fact, if you're familiar with Rust's `Vec<T>` type, you already know what a `String` is because it's essentially the same in behaviour and characteristics, just with the difference that it comes with gurantees of only holding well-formed UTF-8 text.
+* we are working with either a nrf52833 or nrf51822, you will again have to remove the comments from the
+  chip you are using, just like you did in chapter 3.
+* we want to halt the chip after we flashed it so our program does not instantly jump to the loop
+* we want to disable RTT, RTT being a protocol that allows the chip to send text to a debugger.
+  You have in fact already seen RTT in action, it was the protocol that sent "Hello World" in chapter 3.
+* we want to enable GDB, this will be required for the debugging procedure
 
-
-```
-            my_name: String   last_name: &str
-            [––––––––––––]    [–––––––]
-            +–––+––––+––––+–––+–––+–––+
-stack frame │ • │ 16 │ 13 │   │ • │ 6 │
-            +–│–+––––+––––+–––+–│–+–––+
-              │                 │
-              │                 +–––––––––+
-              │                           │
-              │                           │
-              │                         [–│––––––– str –––––––––]
-            +–V–+–––+–––+–––+–––+–––+–––+–V–+–––+–––+–––+–––+–––+–––+–––+–––+
-       heap │ P │ a │ s │ c │ a │ l │   │ P │ r │ e │ c │ h │ t │   │   │   │
-            +–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+–––+
-```
+Alright, let's start by building this program.
